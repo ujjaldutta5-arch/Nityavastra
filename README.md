@@ -1,36 +1,67 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Nityavastra
 
-## Getting Started
+TypeScript Next.js 15 (App Router) storefront + admin for sarees, daily wear, and home essentials.
 
-First, run the development server:
+**Stack:** TypeScript · Next.js Route Handlers · Supabase (Auth, Postgres, Storage, RLS) · Razorpay · Shiprocket
+
+## New Supabase setup (required)
+
+Create a **new** Supabase project, then in **SQL Editor** apply these two files **in order**:
+
+1. [`supabase/schema.sql`](supabase/schema.sql) — full schema (tables, RLS, triggers, storage)
+2. [`supabase/seed.sql`](supabase/seed.sql) — categories, products, banners, CMS, coupons
+
+Do not skip the seed step if you want demo catalog/CMS data.
+
+Then enable **Email** auth under Authentication → Providers.
+
+### Create admin user
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+node scripts/create-admin.mjs admin@nityavastra.com YourSecurePassword Admin
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Or sign up at `/login`, then in SQL:
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+```sql
+UPDATE profiles SET role = 'admin' WHERE email = 'your@email.com';
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Local run
 
-## Learn More
+```bash
+cp .env.example .env.local
+# set NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY
+npm install
+npm run dev
+```
 
-To learn more about Next.js, take a look at the following resources:
+Open http://localhost:3000
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Environment
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| Variable | Purpose |
+|----------|---------|
+| `NEXT_PUBLIC_SUPABASE_URL` | Project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Anon key |
+| `SUPABASE_SERVICE_ROLE_KEY` | Service role (server only) |
+| `NEXT_PUBLIC_SITE_URL` | Canonical URL |
+| `RAZORPAY_KEY_ID` / `RAZORPAY_KEY_SECRET` | Payments (optional; mock pay if unset) |
+| `SHIPROCKET_*` | Shipping (optional) |
 
-## Deploy on Vercel
+## Scripts
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- `npm run dev` — development
+- `npm run build` — production build
+- `npm start` — serve build
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Project layout
+
+```
+app/           App Router pages + API routes (TypeScript)
+components/    UI + storefront components
+context/       Auth + Cart providers
+lib/           Supabase, payments, Shiprocket helpers
+types/         Shared TypeScript types
+supabase/      schema.sql + seed.sql
+```
