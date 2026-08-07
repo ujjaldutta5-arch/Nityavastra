@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ChangeEvent } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +16,8 @@ export default function ReviewSection({ productId }: { productId: string }) {
   const [rating, setRating] = useState(5);
   const [title, setTitle] = useState("");
   const [comment, setComment] = useState("");
+  const [photos, setPhotos] = useState<string[]>([]);
+  const [uploading, setUploading] = useState(false);
 
   const load = async () => {
     const res = await fetch(`/api/reviews?product_id=${productId}`);
@@ -34,12 +36,49 @@ export default function ReviewSection({ productId }: { productId: string }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [productId, user?.id]);
 
+  const onPhoto = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (photos.length >= 3) {
+      toast.error("Max 3 photos");
+      return;
+    }
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/reviews/upload", {
+        method: "POST",
+        credentials: "include",
+        body: fd,
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error((data as { error?: string }).error || "Photo upload failed");
+      }
+      const data = await res.json();
+      setPhotos((p) => [...p, data.url as string]);
+      toast.success("Photo added");
+    } catch (err: unknown) {
+      toast.error((err as Error).message);
+    } finally {
+      setUploading(false);
+      e.target.value = "";
+    }
+  };
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     const res = await fetch("/api/reviews", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ product_id: productId, rating, title, comment }),
+      body: JSON.stringify({
+        product_id: productId,
+        rating,
+        title,
+        comment,
+        photos,
+      }),
     });
     const data = await res.json();
     if (!res.ok) {
@@ -49,6 +88,7 @@ export default function ReviewSection({ productId }: { productId: string }) {
     toast.success("Review submitted");
     setTitle("");
     setComment("");
+    setPhotos([]);
     load();
   };
 
@@ -57,22 +97,38 @@ export default function ReviewSection({ productId }: { productId: string }) {
       <h2 className="font-serif text-2xl text-[#2A1508] mb-6">Reviews</h2>
       <div className="space-y-6 mb-10">
         {reviews.length === 0 && <p className="text-[#78716C]">No reviews yet.</p>}
-        {reviews.map((r) => (
-          <div key={r.id} className="border-b border-[#E7E5E4] pb-4">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-[#B8871E]">{"★".repeat(r.rating)}</span>
-              {r.featured && <span className="text-xs text-[#7C1F30]">Featured</span>}
-            </div>
-            {r.title && <p className="font-medium text-[#2A1508]">{r.title}</p>}
-            <p className="text-sm text-[#57534E]">{r.comment}</p>
-            <p className="text-xs text-[#78716C] mt-1">{r.profiles?.name || "Verified buyer"}</p>
-            {r.admin_reply && (
-              <div className="mt-2 pl-3 border-l-2 border-[#7C1F30] text-sm text-[#57534E]">
-                <span className="font-medium">Nityavastra · Admin:</span> {r.admin_reply}
+        {reviews.map((r) => {
+          const imgs = (r.photos as string[] | undefined) || [];
+          return (
+            <div key={r.id} className="border-b border-[#E7E5E4] pb-4">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-[#B8871E]">{"★".repeat(r.rating)}</span>
+                {r.featured && <span className="text-xs text-[#7C1F30]">Featured</span>}
               </div>
-            )}
-          </div>
-        ))}
+              {r.title && <p className="font-medium text-[#2A1508]">{r.title}</p>}
+              <p className="text-sm text-[#57534E]">{r.comment}</p>
+              {imgs.length > 0 && (
+                <div className="flex gap-2 mt-2">
+                  {imgs.map((url) => (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      key={url}
+                      src={url}
+                      alt=""
+                      className="h-16 w-16 object-cover rounded border border-[#E7E5E4]"
+                    />
+                  ))}
+                </div>
+              )}
+              <p className="text-xs text-[#78716C] mt-1">{r.profiles?.name || "Verified buyer"}</p>
+              {r.admin_reply && (
+                <div className="mt-2 pl-3 border-l-2 border-[#7C1F30] text-sm text-[#57534E]">
+                  <span className="font-medium">Nityavastra · Admin:</span> {r.admin_reply}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       {canReview ? (
@@ -91,7 +147,27 @@ export default function ReviewSection({ productId }: { productId: string }) {
             ))}
           </div>
           <Input placeholder="Title" value={title} onChange={(e) => setTitle(e.target.value)} />
-          <Textarea placeholder="Your experience" value={comment} onChange={(e) => setComment(e.target.value)} />
+          <Textarea
+            placeholder="Your experience"
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+          />
+          <div>
+            <Input
+              type="file"
+              accept="image/*"
+              onChange={onPhoto}
+              disabled={uploading || photos.length >= 3}
+            />
+            {photos.length > 0 && (
+              <div className="flex gap-2 mt-2">
+                {photos.map((url) => (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img key={url} src={url} alt="" className="h-14 w-14 object-cover rounded" />
+                ))}
+              </div>
+            )}
+          </div>
           <Button type="submit" data-testid="submit-review" className="bg-[#7C1F30] text-white">
             Submit review
           </Button>

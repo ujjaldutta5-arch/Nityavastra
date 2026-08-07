@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight, PlayCircle } from "lucide-react";
 
@@ -26,6 +26,8 @@ export default function ProductGallery({
         : [];
 
   const [idx, setIdx] = useState(0);
+  const [zoom, setZoom] = useState({ active: false, x: 50, y: 50 });
+  const frameRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setIdx(0);
@@ -40,9 +42,22 @@ export default function ProductGallery({
   const prev = () => setIdx((i) => (i - 1 + total) % total);
   const next = () => setIdx((i) => (i + 1) % total);
 
+  const onMove = (e: React.MouseEvent) => {
+    if (current.kind === "video" || !frameRef.current) return;
+    const rect = frameRef.current.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    setZoom({ active: true, x, y });
+  };
+
   return (
     <div className="space-y-3" data-testid="product-gallery">
-      <div className="relative aspect-[3/4] overflow-hidden rounded-lg bg-[#F5F5F4] group">
+      <div
+        ref={frameRef}
+        className="relative aspect-[3/4] overflow-hidden rounded-lg bg-[#F5F5F4] group"
+        onMouseMove={onMove}
+        onMouseLeave={() => setZoom((z) => ({ ...z, active: false }))}
+      >
         {current.kind === "video" ? (
           <video
             key={current.url}
@@ -59,7 +74,14 @@ export default function ProductGallery({
             alt={alt}
             fill
             sizes="(max-width: 768px) 100vw, 50vw"
-            className="object-cover"
+            className={`object-cover transition-transform duration-200 ${
+              zoom.active ? "scale-150" : "scale-100"
+            }`}
+            style={
+              zoom.active
+                ? { transformOrigin: `${zoom.x}% ${zoom.y}%` }
+                : { transformOrigin: "center" }
+            }
             data-testid="gallery-image"
             priority
           />

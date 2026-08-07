@@ -1,7 +1,11 @@
 export type {
   StaffRole,
+  SizeType,
   Profile,
   Product,
+  ProductVariant,
+  ColorOption,
+  ProductDimensions,
   CartItem,
   Order,
   Banner,
@@ -9,7 +13,7 @@ export type {
   ReturnRequest,
   Review,
   MediaItem,
-} from './database';
+} from "./database";
 
 export interface RazorpayOptions {
   key: string;

@@ -1,4 +1,6 @@
-export type StaffRole = 'admin' | 'order_manager' | 'inventory_manager' | 'customer';
+export type StaffRole = "admin" | "order_manager" | "inventory_manager" | "customer";
+
+export type SizeType = "none" | "garment" | "trouser" | "saree" | "kids" | "custom";
 
 export interface Profile {
   id: string;
@@ -8,6 +10,31 @@ export interface Profile {
   role: StaffRole;
   banned?: boolean | null;
   address?: Record<string, unknown>;
+}
+
+export interface ProductVariant {
+  sku: string;
+  size: string;
+  color: string;
+  color_hex?: string;
+  stock: number;
+}
+
+export interface ColorOption {
+  name: string;
+  hex: string;
+}
+
+export interface ProductDimensions {
+  length_cm?: number;
+  width_cm?: number;
+  height_cm?: number;
+  weight_g?: number;
+}
+
+export interface MediaItem {
+  kind: "image" | "video" | string;
+  url: string;
 }
 
 export interface Product {
@@ -28,7 +55,17 @@ export interface Product {
   hsn?: string | null;
   gst_rate?: number | null;
   fabric?: string | null;
-  media?: unknown;
+  color_options?: ColorOption[] | null;
+  size_options?: string[] | null;
+  dimensions?: ProductDimensions | null;
+  media?: MediaItem[] | null;
+  variants?: ProductVariant[] | null;
+  size_type?: SizeType | string | null;
+  has_variants?: boolean | null;
+  low_stock_threshold?: number | null;
+  saree_length_m?: number | null;
+  blouse_piece_included?: boolean | null;
+  vendor?: string | null;
   featured?: boolean | null;
   [key: string]: unknown;
 }
@@ -93,13 +130,9 @@ export interface Review {
   rating: number;
   title?: string | null;
   comment?: string | null;
+  photos?: string[] | null;
   featured?: boolean | null;
   admin_reply?: string | null;
   profiles?: { name?: string | null } | null;
   [key: string]: unknown;
-}
-
-export interface MediaItem {
-  kind: "image" | "video" | string;
-  url: string;
 }

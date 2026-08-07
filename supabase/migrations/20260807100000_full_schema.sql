@@ -42,6 +42,12 @@ CREATE TABLE IF NOT EXISTS public.products (
   size_options jsonb DEFAULT '[]',
   dimensions jsonb DEFAULT '{}',
   media jsonb DEFAULT '[]',
+  variants jsonb DEFAULT '[]',
+  size_type text DEFAULT 'none',
+  has_variants boolean DEFAULT false,
+  low_stock_threshold int DEFAULT 5,
+  saree_length_m numeric(6,2) DEFAULT 0,
+  blouse_piece_included boolean DEFAULT false,
   vendor text,
   featured boolean DEFAULT false,
   created_at timestamptz DEFAULT now()

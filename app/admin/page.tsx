@@ -85,7 +85,7 @@ export default function AdminDashboardPage() {
       <section>
         <h2 className="font-serif text-xl text-[#7C1F30] mb-3">Low stock</h2>
         {(stats?.low_stock || []).length === 0 ? (
-          <p className="text-sm text-[#57534E]">All products have stock above 5.</p>
+          <p className="text-sm text-[#57534E]">No products at or below their low-stock threshold.</p>
         ) : (
           <div className="overflow-x-auto rounded-lg border border-[#7C1F30]/15 bg-white">
             <table className="w-full text-sm" data-testid="low-stock-table">

@@ -39,8 +39,8 @@ async function getHomeData() {
         .eq("active", true)
         .order("display_order", { ascending: true }),
       supabase.from("categories").select("*").is("parent_slug", null).order("name"),
-      supabase.from("products").select("*").contains("tags", ["bestseller"]).limit(8),
-      supabase.from("products").select("*").contains("tags", ["new-arrival"]).limit(8),
+      supabase.from("products").select("*").contains("product_tags", ["bestseller"]).limit(8),
+      supabase.from("products").select("*").contains("product_tags", ["new-arrival"]).limit(8),
     ]);
 
   return {

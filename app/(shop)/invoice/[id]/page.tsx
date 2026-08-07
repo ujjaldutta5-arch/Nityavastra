@@ -90,7 +90,7 @@ export default function InvoicePage() {
 
   const order: InvoiceOrder = data.order || data;
   const seller: InvoiceSeller = data.seller || {
-    name: "Nityavastra4U",
+    name: "Nityavastra",
     address: "Bhubaneswar, Odisha 751019",
     gstin: "—",
     email: "hello@nityavastra.com",

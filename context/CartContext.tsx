@@ -123,12 +123,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ product_id, quantity, variant_sku }),
       });
-      if (!res.ok) throw new Error("add failed");
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error((data as { error?: string }).error || "add failed");
       await refreshCart();
       toast.success("Added to cart");
       return true;
-    } catch {
-      toast.error("Could not add to cart");
+    } catch (e: unknown) {
+      toast.error((e as Error).message || "Could not add to cart");
       return false;
     }
   };

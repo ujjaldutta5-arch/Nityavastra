@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
 import { formatINR } from "@/lib/utils";
+import { findVariant, variantLabel } from "@/lib/product-variants";
 import { Button } from "@/components/ui/button";
 import type { Product } from "@/types";
 
@@ -26,19 +27,44 @@ export default function CartPage() {
       <div className="space-y-6">
         {items.map((item) => {
           const p = (item.products || item.product || {}) as Partial<Product>;
+          const variant = findVariant(p as Product, item.variant_sku);
+          const label = variantLabel(variant);
           return (
-            <div key={item.id} className="flex gap-4 border-b border-[#E7E5E4] pb-6" data-testid="cart-item">
-              <img src={p.image} alt={p.name || ""} className="w-24 h-32 object-cover rounded-md" />
+            <div
+              key={`${item.id}-${item.variant_sku || ""}`}
+              className="flex gap-4 border-b border-[#E7E5E4] pb-6"
+              data-testid="cart-item"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={p.image}
+                alt={p.name || ""}
+                className="w-24 h-32 object-cover rounded-md"
+              />
               <div className="flex-1">
-                <Link href={`/product/${p.slug || p.id}`} className="font-serif text-lg hover:text-[#7C1F30]">
+                <Link
+                  href={`/product/${p.slug || p.id}`}
+                  className="font-serif text-lg hover:text-[#7C1F30]"
+                >
                   {p.name}
                 </Link>
+                {label && (
+                  <p className="text-sm text-[#78716C] mt-0.5" data-testid="cart-variant">
+                    {label}
+                  </p>
+                )}
                 <p className="text-[#2A1508] mt-1">{formatINR(p.price)}</p>
                 <div className="flex items-center gap-3 mt-3">
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => updateQuantity(item.product_id, item.quantity - 1)}
+                    onClick={() =>
+                      updateQuantity(
+                        item.product_id,
+                        item.quantity - 1,
+                        item.variant_sku
+                      )
+                    }
                   >
                     −
                   </Button>
@@ -46,11 +72,21 @@ export default function CartPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => updateQuantity(item.product_id, item.quantity + 1)}
+                    onClick={() =>
+                      updateQuantity(
+                        item.product_id,
+                        item.quantity + 1,
+                        item.variant_sku
+                      )
+                    }
                   >
                     +
                   </Button>
-                  <Button variant="ghost" size="sm" onClick={() => removeFromCart(item.product_id)}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeFromCart(item.product_id, item.variant_sku)}
+                  >
                     Remove
                   </Button>
                 </div>

@@ -2,6 +2,8 @@ import { requireUser, json, err } from "@/lib/api-auth";
 import { generateOrderId } from "@/lib/utils";
 import { calcGst, getRazorpayClient } from "@/lib/payments";
 import { notifyOrderEvent } from "@/lib/notifications";
+import { getAvailableStock } from "@/lib/product-variants";
+import type { Product } from "@/types";
 
 export async function POST(request: Request) {
   const ctx = await requireUser();
@@ -63,14 +65,7 @@ export async function POST(request: Request) {
     product_id: string;
     variant_sku?: string | null;
     quantity: number;
-    products?: {
-      name?: string;
-      image?: string;
-      price?: number;
-      gst_rate?: number;
-      hsn?: string;
-      stock?: number;
-    } | null;
+    products?: Product | null;
   };
 
   const items = (cartRows as CartRow[]).map((c) => ({
@@ -83,11 +78,11 @@ export async function POST(request: Request) {
     gst_rate: Number(c.products?.gst_rate || 5),
     hsn: c.products?.hsn || "6304",
     line_total: Number(c.products?.price || 0) * c.quantity,
-    stock: c.products?.stock,
+    stock: c.products ? getAvailableStock(c.products, c.variant_sku) : 0,
   }));
 
   for (const item of items) {
-    if ((item.stock ?? 0) < item.quantity) {
+    if (item.stock < item.quantity) {
       return err(`Insufficient stock for ${item.product_name}`);
     }
   }

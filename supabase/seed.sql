@@ -119,3 +119,22 @@ ON CONFLICT (code) DO NOTHING;
 INSERT INTO public.store_settings (id) VALUES ('default') ON CONFLICT (id) DO NOTHING;
 
 NOTIFY pgrst, 'reload schema';
+
+-- Variant demo product (run after 20260808120000_product_variants columns exist)
+INSERT INTO public.products (
+  id, slug, name, category, sub_category, price, old_price, image, description, stock,
+  tags, product_tags, featured, fabric, hsn, gst_rate,
+  color_options, size_options, dimensions, media, variants, size_type, has_variants, low_stock_threshold
+) VALUES (
+  'v1', 'handloom-cotton-kurti-set', 'Handloom Cotton Kurti Set', 'daily-wear', 'kurtis',
+  1499, 1999,
+  'https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=940',
+  'Soft handloom cotton kurti ? pick size and colour; each combo stocks separately.',
+  48, ARRAY['cotton','kurti'], ARRAY['new-arrival','casual'], true, 'Cotton', '6204', 5.0,
+  '[{"name":"Crimson","hex":"#7C1F30"},{"name":"Navy","hex":"#1E3A5F"}]'::jsonb,
+  '["S","M","L"]'::jsonb,
+  '{"length_cm":30,"width_cm":25,"height_cm":4,"weight_g":450}'::jsonb,
+  '[{"kind":"image","url":"https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=940"},{"kind":"image","url":"https://images.unsplash.com/photo-1583391733956-6c78276477e2?q=80&w=940"}]'::jsonb,
+  '[{"sku":"V1-S-CRIMSON","size":"S","color":"Crimson","color_hex":"#7C1F30","stock":8},{"sku":"V1-M-CRIMSON","size":"M","color":"Crimson","color_hex":"#7C1F30","stock":12},{"sku":"V1-L-CRIMSON","size":"L","color":"Crimson","color_hex":"#7C1F30","stock":5},{"sku":"V1-S-NAVY","size":"S","color":"Navy","color_hex":"#1E3A5F","stock":10},{"sku":"V1-M-NAVY","size":"M","color":"Navy","color_hex":"#1E3A5F","stock":10},{"sku":"V1-L-NAVY","size":"L","color":"Navy","color_hex":"#1E3A5F","stock":3}]'::jsonb,
+  'garment', true, 5
+) ON CONFLICT (id) DO NOTHING;

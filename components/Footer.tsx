@@ -143,7 +143,7 @@ export default function Footer() {
         </div>
 
         <div className="mt-12 md:mt-16 pt-8 border-t border-[#FAF3E7]/10 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-[#FAF3E7]/60">
-          <p>© {new Date().getFullYear()} Nityavastra4U. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} Nityavastra. All rights reserved.</p>
           <p>Ships across India · Order via WhatsApp</p>
         </div>
       </div>

@@ -4,10 +4,10 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { ShoppingBag, Heart, User, Search, Menu, LogOut } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
-import { isStaff } from "@/lib/utils";
+import { formatINR, isStaff } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -30,13 +30,39 @@ const NAV_LINKS = [
   { href: "/shop?category=home-essentials", label: "Essentials" },
 ];
 
+type Suggest = {
+  id: string;
+  name: string;
+  slug?: string | null;
+  image?: string;
+  price?: number;
+};
+
 export default function Navbar() {
   const { user, signOut } = useAuth();
   const { cartCount, wishlist } = useCart();
   const [searchOpen, setSearchOpen] = useState(false);
   const [q, setQ] = useState("");
+  const [suggestions, setSuggestions] = useState<Suggest[]>([]);
   const [mobileOpen, setMobileOpen] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    if (!searchOpen || q.trim().length < 2) {
+      setSuggestions([]);
+      return;
+    }
+    const t = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/search?q=${encodeURIComponent(q.trim())}`);
+        const data = await res.json();
+        setSuggestions((data.products || []) as Suggest[]);
+      } catch {
+        setSuggestions([]);
+      }
+    }, 220);
+    return () => clearTimeout(t);
+  }, [q, searchOpen]);
 
   const doSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,6 +70,7 @@ export default function Navbar() {
       router.push(`/shop?search=${encodeURIComponent(q.trim())}`);
       setSearchOpen(false);
       setQ("");
+      setSuggestions([]);
     }
   };
 
@@ -212,16 +239,48 @@ export default function Navbar() {
         </div>
 
         {searchOpen && (
-          <form onSubmit={doSearch} className="pb-4">
-            <Input
-              autoFocus
-              value={q}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setQ(e.target.value)}
-              placeholder="Search sarees, bedsheets, essentials..."
-              className="bg-white border-[#E7E5E4]"
-              data-testid="search-input"
-            />
-          </form>
+          <div className="pb-4 relative">
+            <form onSubmit={doSearch}>
+              <Input
+                autoFocus
+                value={q}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setQ(e.target.value)}
+                placeholder="Search sarees, bedsheets, essentials..."
+                className="bg-white border-[#E7E5E4]"
+                data-testid="search-input"
+              />
+            </form>
+            {suggestions.length > 0 && (
+              <ul
+                className="absolute left-0 right-0 mt-1 z-50 rounded-lg border border-[#E7E5E4] bg-white shadow-lg overflow-hidden"
+                data-testid="search-suggestions"
+              >
+                {suggestions.map((s) => (
+                  <li key={s.id}>
+                    <button
+                      type="button"
+                      className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-[#FAF3E7]"
+                      onClick={() => {
+                        router.push(`/product/${s.slug || s.id}`);
+                        setSearchOpen(false);
+                        setQ("");
+                        setSuggestions([]);
+                      }}
+                    >
+                      {s.image && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={s.image} alt="" className="h-10 w-8 object-cover rounded" />
+                      )}
+                      <span className="flex-1 text-sm text-[#2A1508]">{s.name}</span>
+                      {s.price != null && (
+                        <span className="text-xs text-[#78716C]">{formatINR(s.price)}</span>
+                      )}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         )}
       </div>
     </header>

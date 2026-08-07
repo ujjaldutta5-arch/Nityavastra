@@ -4,22 +4,29 @@ import type { User } from "@supabase/supabase-js";
 
 export type GetProductsOpts = {
   category?: string;
+  sub_category?: string;
   featured?: boolean;
   limit?: number;
   tag?: string;
   search?: string;
   sort?: string;
+  fabric?: string;
+  color?: string;
+  size?: string;
 };
 
 export async function getProducts(opts: GetProductsOpts = {}): Promise<Product[]> {
   const supabase = await createClient();
   let query = supabase.from("products").select("*").order("created_at", { ascending: false });
   if (opts.category && opts.category !== "all") query = query.eq("category", opts.category);
+  if (opts.sub_category) query = query.eq("sub_category", opts.sub_category);
   if (opts.featured) query = query.eq("featured", true);
+  if (opts.fabric) query = query.ilike("fabric", opts.fabric);
   if (opts.limit) query = query.limit(opts.limit);
   const { data, error } = await query;
   if (error) throw error;
   let rows = (data || []) as Product[];
+
   if (opts.tag) {
     rows = rows.filter((p) => (p.product_tags || p.tags || []).includes(opts.tag!));
   }
@@ -29,8 +36,25 @@ export async function getProducts(opts: GetProductsOpts = {}): Promise<Product[]
       (p) =>
         p.name?.toLowerCase().includes(q) ||
         p.description?.toLowerCase().includes(q) ||
-        p.category?.toLowerCase().includes(q)
+        p.category?.toLowerCase().includes(q) ||
+        p.fabric?.toLowerCase().includes(q)
     );
+  }
+  if (opts.color) {
+    const c = opts.color.toLowerCase();
+    rows = rows.filter((p) => {
+      const fromOpts = (p.color_options || []).some((o) => o.name?.toLowerCase() === c);
+      const fromVariants = (p.variants || []).some((v) => v.color?.toLowerCase() === c);
+      return fromOpts || fromVariants;
+    });
+  }
+  if (opts.size) {
+    const s = opts.size.toLowerCase();
+    rows = rows.filter((p) => {
+      const fromOpts = (p.size_options || []).some((x) => String(x).toLowerCase() === s);
+      const fromVariants = (p.variants || []).some((v) => v.size?.toLowerCase() === s);
+      return fromOpts || fromVariants;
+    });
   }
   if (opts.sort === "price_asc") rows.sort((a, b) => a.price - b.price);
   else if (opts.sort === "price_desc") rows.sort((a, b) => b.price - a.price);
@@ -103,12 +127,14 @@ export async function getSettings(): Promise<StoreSettings> {
   );
 }
 
-export type ProfileWithAuth = (Profile & { authUser: User }) | {
-  id: string;
-  email?: string;
-  role: string;
-  authUser: User;
-};
+export type ProfileWithAuth =
+  | (Profile & { authUser: User })
+  | {
+      id: string;
+      email?: string;
+      role: string;
+      authUser: User;
+    };
 
 export async function getProfile(): Promise<ProfileWithAuth | null> {
   const supabase = await createClient();
@@ -120,4 +146,28 @@ export async function getProfile(): Promise<ProfileWithAuth | null> {
   return data
     ? { ...(data as Profile), authUser: user }
     : { id: user.id, email: user.email, role: "customer", authUser: user };
+}
+
+/** Derive facet values from a product list for shop filters. */
+export function deriveFacets(products: Product[]) {
+  const fabrics = new Set<string>();
+  const colors = new Set<string>();
+  const sizes = new Set<string>();
+  const subs = new Set<string>();
+  for (const p of products) {
+    if (p.fabric) fabrics.add(p.fabric);
+    if (p.sub_category) subs.add(p.sub_category);
+    for (const c of p.color_options || []) if (c.name) colors.add(c.name);
+    for (const v of p.variants || []) {
+      if (v.color) colors.add(v.color);
+      if (v.size) sizes.add(v.size);
+    }
+    for (const s of p.size_options || []) if (s) sizes.add(String(s));
+  }
+  return {
+    fabrics: [...fabrics].sort(),
+    colors: [...colors].sort(),
+    sizes: [...sizes].sort(),
+    sub_categories: [...subs].sort(),
+  };
 }

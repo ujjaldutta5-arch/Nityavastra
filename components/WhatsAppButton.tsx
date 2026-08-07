@@ -6,7 +6,7 @@ const PHONE = "918777787700";
 
 export default function WhatsAppButton() {
   const href = `https://wa.me/${PHONE}?text=${encodeURIComponent(
-    "Hi Nityavastra4U, I have a question about your products."
+    "Hi Nityavastra, I have a question about your products."
   )}`;
   return (
     <a

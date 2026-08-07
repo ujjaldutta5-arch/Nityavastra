@@ -1,8 +1,8 @@
 import Link from "next/link";
+import { getProducts, deriveFacets } from "@/lib/catalog";
 import { createClient } from "@/lib/supabase/server";
 import ProductCard from "@/components/ProductCard";
 import ShopFilters from "./ShopFilters";
-import type { Product } from "@/types";
 
 export const metadata = {
   title: "Shop All Products",
@@ -23,32 +23,36 @@ export default async function ShopPage({
   const search = asString(params?.search);
   const tag = asString(params?.tag);
   const sort = asString(params?.sort, "newest") || "newest";
+  const sub_category = asString(params?.sub_category);
+  const fabric = asString(params?.fabric);
+  const color = asString(params?.color);
+  const size = asString(params?.size);
+
+  const sortMap: Record<string, string> = {
+    newest: "newest",
+    "price-asc": "price_asc",
+    "price-desc": "price_desc",
+    popular: "popular",
+    name: "newest",
+  };
 
   const supabase = await createClient();
-
-  let query = supabase.from("products").select("*");
-
-  if (category && category !== "all") {
-    query = query.eq("category", category);
-  }
-  if (tag) {
-    query = query.contains("tags", [tag]);
-  }
-  if (search) {
-    query = query.or(`name.ilike.%${search}%,description.ilike.%${search}%`);
-  }
-
-  if (sort === "price-asc") query = query.order("price", { ascending: true });
-  else if (sort === "price-desc") query = query.order("price", { ascending: false });
-  else if (sort === "name") query = query.order("name", { ascending: true });
-  else query = query.order("created_at", { ascending: false });
-
-  const [{ data: products }, { data: categories }] = await Promise.all([
-    query,
+  const [{ data: categories }, { data: allForFacets }, list] = await Promise.all([
     supabase.from("categories").select("*").is("parent_slug", null).order("name"),
+    supabase.from("products").select("fabric, sub_category, color_options, size_options, variants"),
+    getProducts({
+      category,
+      sub_category: sub_category || undefined,
+      search: search || undefined,
+      tag: tag || undefined,
+      fabric: fabric || undefined,
+      color: color || undefined,
+      size: size || undefined,
+      sort: sortMap[sort] || "newest",
+    }),
   ]);
 
-  const list = (products || []) as Product[];
+  const facets = deriveFacets((allForFacets || []) as Parameters<typeof deriveFacets>[0]);
   const cats = (categories || []) as { slug: string; name: string }[];
   const title =
     category === "all"
@@ -73,6 +77,11 @@ export default async function ShopPage({
         currentSort={sort}
         currentSearch={search}
         currentTag={tag}
+        currentSub={sub_category}
+        currentFabric={fabric}
+        currentColor={color}
+        currentSize={size}
+        facets={facets}
       />
 
       {list.length === 0 ? (
